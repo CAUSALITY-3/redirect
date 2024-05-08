@@ -19,7 +19,7 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify(responseData));
   }
   proxy.web(req, res, {
-    target: 'https://google.com',
+    target: 'http://[2403:a080:c04:46b0:4c48:38f1:e8ab:dbe]:3000',
   });
 });
 proxy.on("error", (err, req, res) => {
