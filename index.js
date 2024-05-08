@@ -1,49 +1,38 @@
-// const express = require('express');
-// const { createProxyMiddleware } = require('http-proxy-middleware');
+const http = require("http");
+const httpProxy = require("http-proxy");
+const url = require("url");
 
-// const app = express();
-
-// // Define your proxy target
-// const target = 'http://localhost:3000'; // Change this to your target URL
-
-// // Create the proxy middleware
-// const proxyMiddleware = createProxyMiddleware({
-//     target,
-//     changeOrigin: true, // Needed for virtual hosted sites
-//     logLevel: 'debug', // Optional: set to 'debug' for more detailed logs
-// });
-
-// // Apply the proxy middleware for all HTTP methods
-// app.use('/*', proxyMiddleware);
-
-// // Start the server
-// const PORT = 4000;
-// app.listen(PORT, () => {
-//     console.log(`Proxy server is running on port ${PORT}`);
-// });
-
-const http = require('http');
-const httpProxy = require('http-proxy');
-const url = require('url');
-
-// Replace these values with your local server's host and port
-const LOCAL_SERVER_HOST = 'localhost';
-const LOCAL_SERVER_PORT = 3000;
-
-// Create a proxy server instance
+const sandbox = {
+  THANAL_URL: "",
+  THANAL_NEXT_PORT: 3000,
+  THANAL_API_PORT: 5000,
+};
 const proxy = httpProxy.createProxyServer({});
+const server = http.createServer((req, res) => {
+  const parsedUrl = url.parse(req.url, true);
+  console.log(`Incoming request: ${req.method} ${parsedUrl.path}`);
+  if (req.method === "GET" && parsedUrl.pathname === "/updateAddress") {
+    const ipv6 = parsedUrl.query.address;
+    sandbox.THANAL_URL = `[${ipv6}]`;
+    const responseData = { message: "Successfully updated url", ipv6 };
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(responseData));
+  }
+  proxy.web(req, res, {
+    target: `http://${sandbox.THANAL_URL}:${sandbox.THANAL_NEXT_PORT}`,
+  });
+});
 
-// Create an HTTP server
-http.createServer((req, res) => {
-    // Parse the request URL
-    const reqUrl = url.parse(req.url);
+proxy.on("error", (err, req, res) => {
+  console.error("Proxy error:", err);
+  res.writeHead(500, { "Content-Type": "text/plain" });
+  res.end("Proxy Error");
+});
 
-    // Log the incoming request
-    console.log(`Incoming request: ${req.method} ${reqUrl.path}`);
+server.on("error", (err) => {
+  console.error("Server error:", err);
+});
 
-    // Proxy the request to the local server
-    proxy.web(req, res, { target: `http://${LOCAL_SERVER_HOST}:${LOCAL_SERVER_PORT}` });
-}).listen(8000); // Port for your tunnel server
+server.listen(8000);
 
-console.log('Tunnel server running on port 8000');
-
+console.log("Tunnel server running on port 8000");
