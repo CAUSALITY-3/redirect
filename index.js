@@ -10,16 +10,16 @@ const sandbox = {
 const proxy = httpProxy.createProxyServer({});
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
-  console.log(`Incoming request: ${req.method} ${parsedUrl.path}`);
+  console.log(`Incoming request: ${req?.method} ${parsedUrl?.path}`);
   if (req.method === "GET" && parsedUrl.pathname === "/updateAddress") {
-    const ipv6 = parsedUrl.query.address;
+    const ipv6 = parsedUrl?.query?.address;
     sandbox.THANAL_URL = `[${ipv6}]`;
     const responseData = { message: "Successfully updated url", ipv6 };
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(responseData));
   }
   proxy.web(req, res, {
-    target: `http://${sandbox.THANAL_URL}:${sandbox.THANAL_NEXT_PORT}`,
+    target: 'http://[2403:a080:c04:46b0:4c48:38f1:e8ab:dbe]:3000',
   });
 });
 proxy.on("error", (err, req, res) => {
