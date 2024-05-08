@@ -3,7 +3,7 @@ const httpProxy = require("http-proxy");
 const url = require("url");
 
 const sandbox = {
-  THANAL_URL: "",
+  THANAL_URL: "[2403:a080:c04:46b0:4c48:38f1:e8ab:dbe]",
   THANAL_NEXT_PORT: 3000,
   THANAL_API_PORT: 5000,
 };
@@ -22,13 +22,13 @@ const server = http.createServer((req, res) => {
     target: `http://${sandbox.THANAL_URL}:${sandbox.THANAL_NEXT_PORT}`,
   });
 });
-
 proxy.on("error", (err, req, res) => {
   console.error("Proxy error:", err);
   res.writeHead(500, { "Content-Type": "text/plain" });
   res.end("Proxy Error");
 });
 
+// Listen for server errors
 server.on("error", (err) => {
   console.error("Server error:", err);
 });
