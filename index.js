@@ -1,5 +1,5 @@
 const http = require("http");
-const httpProxy = require("http-proxy");
+const axios = require("axios");
 const url = require("url");
 
 const sandbox = {
@@ -7,32 +7,37 @@ const sandbox = {
   THANAL_NEXT_PORT: 3000,
   THANAL_API_PORT: 5000,
 };
-const proxy = httpProxy.createProxyServer({});
-const server = http.createServer((req, res) => {
+const cache = {};
+const server = http.createServer(async (req, res) => {
   try {
     const parsedUrl = url.parse(req.url, true);
     console.log(`Incoming request: ${req.method} ${parsedUrl.path}`);
-    if (
-      req.method === "GET" &&
-      parsedUrl.pathname.startsWith("/images/getImage")
-    ) {
-      proxy.web(req, res, {
-        target: `http://${sandbox.THANAL_URL}:${sandbox.THANAL_API_PORT}`,
-      });
+    const cacheKey = req.method + parsedUrl.path;
+    const cacheData = cache[cacheKey];
+    if (cacheData) {
+      console.log("From cache, &&&&&&&&&&");
+      res.end(cacheData);
     } else {
-      proxy.web(req, res, {
-        target: `http://${sandbox.THANAL_URL}:${sandbox.THANAL_NEXT_PORT}`,
+      const targetUrl = `http://${sandbox.THANAL_URL}:${sandbox.THANAL_NEXT_PORT}${parsedUrl.path}`;
+      const response = await axios({
+        method: req.method,
+        url: targetUrl,
+        headers: req.headers,
+        data: req.body,
+        responseType: "arraybuffer",
       });
+      res.writeHead(response.status, response.headers);
+      res.end(response.data);
+      console.log("Adding to cache", parsedUrl.path);
+      cache[cacheKey] = response.data;
     }
   } catch (error) {
-    console.log("Error: ", error);
-  }
-});
+    console.log(error);
+    console.log("Error: ", req.url);
 
-proxy.on("error", (err, req, res) => {
-  console.error("Proxy error:", err);
-  res.writeHead(500, { "Content-Type": "text/plain" });
-  res.end("Proxy Error");
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Internal Server Error");
+  }
 });
 
 server.on("error", (err) => {
@@ -41,4 +46,4 @@ server.on("error", (err) => {
 
 server.listen(80);
 
-console.log("Tunnel server running on port 8000");
+console.log("Tunnel server running on port 80");
